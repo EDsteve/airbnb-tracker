@@ -1,0 +1,13 @@
+# Add Airbnb listing URLs or IDs below (one per line)
+# Examples:
+#Fancy at Liberty Tower:
+# https://www.airbnb.com/rooms/1486997032462600452
+#1. Fancy liberty Tower
+#2. my place
+https://www.airbnb.com/rooms/1486997032462600452
+https://www.airbnb.com/rooms/1208979758986074905
+https://www.airbnb.com/rooms/41386386
+https://www.airbnb.com/rooms/966425307065477331
+https://www.airbnb.com/rooms/1511237454100169649
+https://www.airbnb.com/rooms/1511216605023614269
+https://www.airbnb.com/rooms/1511233983572022716

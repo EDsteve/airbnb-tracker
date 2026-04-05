@@ -1,0 +1,45 @@
+# Database files (private tracking data)
+tracker.db
+tracker.db-journal
+
+# Cache files
+thumbnail_cache.json
+
+# Report outputs
+*.csv
+occupancy_report.csv
+bookings_report.csv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Debug files
+debug_*.py
+debug_*.png
+debug_*.txt
+nul
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+tracker_log.txt
