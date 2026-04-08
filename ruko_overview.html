@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>🏢 Ruko Medan – Overview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    :root {
+      --airbnb:#FF5A5F; --teal:#00A699; --orange:#FC642D;
+      --dark:#484848;   --gold:#FFB400;
+    }
+    body { background:#f0f2f5; font-family:'Segoe UI',system-ui,sans-serif; }
+
+    /* TOP BAR */
+    .topbar { background:var(--airbnb); color:#fff; padding:.75rem 0;
+              box-shadow:0 2px 8px rgba(0,0,0,.2); position:sticky; top:0; z-index:100; }
+    .topbar .brand { font-weight:800; font-size:1.15rem; }
+
+    /* SUMMARY PILLS */
+    .stat-pill { background:rgba(255,255,255,.18); border-radius:20px;
+                 padding:.25rem .85rem; font-size:.78rem; font-weight:600; }
+
+    /* CONTROLS BAR */
+    .ctrl-bar { background:#fff; border-bottom:1px solid #eee;
+                padding:.6rem 0; position:sticky; top:56px; z-index:99;
+                box-shadow:0 1px 4px rgba(0,0,0,.06); }
+
+    /* DISTRICT BADGES */
+    .dist-badge { font-size:.68rem; font-weight:700; padding:.2rem .6rem;
+                  border-radius:20px; color:#fff; white-space:nowrap; }
+
+    /* STATUS BADGES */
+    .status-star     { background:#fff3cd; color:#856404; }
+    .status-maybe    { background:#cff4fc; color:#0a6787; }
+    .status-pass     { background:#f8d7da; color:#842029; }
+    .status-unrated  { background:#e9ecef; color:#6c757d; }
+    .status-badge    { font-size:.7rem; font-weight:700; padding:.15rem .55rem;
+                       border-radius:20px; border:none; cursor:pointer; }
+
+    /* CARDS */
+    .prop-card { background:#fff; border-radius:14px;
+                 box-shadow:0 2px 10px rgba(0,0,0,.07);
+                 overflow:hidden; height:100%; position:relative;
+                 transition:transform .15s, box-shadow .15s; }
+    .prop-card:hover { transform:translateY(-2px);
+                       box-shadow:0 6px 20px rgba(0,0,0,.12); }
+    .card-accent { height:5px; }
+
+    .prop-name { font-weight:700; font-size:.88rem; line-height:1.3;
+                 color:#222; text-decoration:none; }
+    .prop-name:hover { color:var(--airbnb); text-decoration:underline; }
+
+    .price-big { font-size:1.05rem; font-weight:800; color:var(--airbnb); }
+    .price-unit { font-size:.72rem; color:#999; font-weight:500; }
+
+    .spec-grid { display:grid; grid-template-columns:1fr 1fr;
+                 gap:.25rem .5rem; font-size:.75rem; color:#555; }
+    .spec-item { display:flex; align-items:center; gap:.25rem; }
+
+    .notes-preview { font-size:.73rem; color:#888; font-style:italic;
+                     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+                     max-width:100%; }
+
+    /* EDIT BTN */
+    .btn-edit { position:absolute; top:.6rem; right:.6rem;
+                background:rgba(255,255,255,.85); border:1px solid #ddd;
+                border-radius:8px; font-size:.7rem; padding:.2rem .55rem;
+                cursor:pointer; }
+    .btn-edit:hover { background:var(--airbnb); color:#fff; border-color:var(--airbnb); }
+
+    /* TABLE */
+    #tableView { display:none; }
+    .comp-table th { font-size:.68rem; text-transform:uppercase;
+                     letter-spacing:.06em; color:#aaa; background:#fafafa;
+                     white-space:nowrap; }
+    .comp-table td { font-size:.8rem; vertical-align:middle; }
+    .comp-table .name-link { color:#222; font-weight:600; text-decoration:none; }
+    .comp-table .name-link:hover { color:var(--airbnb); text-decoration:underline; }
+    .price-cell { font-weight:700; color:var(--airbnb); white-space:nowrap; }
+
+    /* NOTES */
+    .notes-cell { max-width:180px; font-size:.75rem; color:#666;
+                  white-space:pre-wrap; word-break:break-word; }
+
+    /* MODAL */
+    .modal-label { font-size:.8rem; font-weight:600; color:#555; margin-bottom:.3rem; }
+    .form-control-sm, .form-select-sm { font-size:.82rem; }
+
+    /* FILTER TOGGLE */
+    .view-btn.active  { background:var(--airbnb) !important; color:#fff !important; }
+    .dist-btn.active  { background:var(--airbnb) !important; color:#fff !important; border-color:var(--airbnb) !important; }
+    .stat-btn.active  { background:var(--airbnb) !important; color:#fff !important; border-color:var(--airbnb) !important; }
+
+    /* HIDDEN CARD */
+    .col-card.hidden { display:none !important; }
+
+    /* PRICE BAR */
+    .price-bar-wrap { background:#f0f0f0; border-radius:4px; height:5px; margin-top:4px; }
+    .price-bar      { background:var(--airbnb); border-radius:4px; height:5px; }
+
+    /* HINT TAGS */
+    .hint-tag { font-size:.65rem; background:#f0f0f0; color:#777;
+                border-radius:20px; padding:.1rem .45rem; display:inline-block; margin:.1rem .1rem 0 0; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ TOP BAR ═══════════════ -->
+<div class="topbar">
+  <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span class="brand">🏢 Ruko Medan – Rental Comparison</span>
+    <div class="d-flex gap-2 flex-wrap" id="summaryPills"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ CONTROLS BAR ═══════════════ -->
+<div class="ctrl-bar">
+  <div class="container">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+
+      <!-- View toggle -->
+      <div class="btn-group btn-group-sm me-2">
+        <button class="btn btn-outline-secondary view-btn active" id="btnCards" onclick="setView('cards')">⊞ Cards</button>
+        <button class="btn btn-outline-secondary view-btn" id="btnTable" onclick="setView('table')">≡ Table</button>
+      </div>
+
+      <!-- Sort -->
+      <select class="form-select form-select-sm" style="width:auto;font-size:.78rem" id="sortSel" onchange="applyFilters()">
+        <option value="id">Sort: #</option>
+        <option value="price_asc">💰 Price ↑</option>
+        <option value="price_desc">💰 Price ↓</option>
+        <option value="floors_desc">🏢 Floors ↓</option>
+        <option value="status">⭐ Status</option>
+      </select>
+
+      <!-- District filter -->
+      <button class="btn btn-sm btn-outline-secondary dist-btn active" data-dist="All" onclick="setDist(this)">All</button>
+      <button class="btn btn-sm btn-outline-secondary dist-btn" data-dist="Medan Kota" onclick="setDist(this)">Kota</button>
+      <button class="btn btn-sm btn-outline-secondary dist-btn" data-dist="Medan Area" onclick="setDist(this)">Area</button>
+      <button class="btn btn-sm btn-outline-secondary dist-btn" data-dist="Medan Timur" onclick="setDist(this)">Timur</button>
+      <button class="btn btn-sm btn-outline-secondary dist-btn" data-dist="Medan Barat" onclick="setDist(this)">Barat</button>
+      <button class="btn btn-sm btn-outline-secondary dist-btn" data-dist="Medan Perjuangan" onclick="setDist(this)">Perjuangan</button>
+
+      <!-- Status filter -->
+      <div class="vr mx-1"></div>
+      <button class="btn btn-sm btn-outline-secondary stat-btn active" data-st="All" onclick="setStat(this)">All Status</button>
+      <button class="btn btn-sm btn-outline-secondary stat-btn" data-st="star" onclick="setStat(this)">⭐ Interested</button>
+      <button class="btn btn-sm btn-outline-secondary stat-btn" data-st="maybe" onclick="setStat(this)">🤔 Maybe</button>
+      <button class="btn btn-sm btn-outline-secondary stat-btn" data-st="pass" onclick="setStat(this)">❌ Pass</button>
+
+      <!-- Reset -->
+      <button class="btn btn-sm btn-outline-danger ms-auto" onclick="resetAll()" title="Reset all user edits to defaults">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4 pb-5">
+
+  <!-- CARD VIEW -->
+  <div id="cardView">
+    <div class="row g-3" id="cardsRow"></div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div id="tableView">
+    <div class="bg-white rounded-3 shadow-sm p-3">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm comp-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th>Status</th>
+              <th style="min-width:200px">Name</th>
+              <th>District</th>
+              <th>Price/yr</th>
+              <th>Floors</th>
+              <th>LB m²</th>
+              <th>LT m²</th>
+              <th>Beds</th>
+              <th>Baths</th>
+              <th>Furnished</th>
+              <th style="min-width:160px">Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ EDIT MODAL ═══════════════ -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--airbnb);color:#fff">
+        <h5 class="modal-title fw-bold" id="modalTitle">Edit Listing</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+
+        <!-- Status -->
+        <div class="mb-3">
+          <div class="modal-label">My Status</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm status-radio" data-val="star"    onclick="setStatusRadio(this)">⭐ Interested</button>
+            <button type="button" class="btn btn-sm status-radio" data-val="maybe"   onclick="setStatusRadio(this)">🤔 Maybe</button>
+            <button type="button" class="btn btn-sm status-radio" data-val="pass"    onclick="setStatusRadio(this)">❌ Pass</button>
+            <button type="button" class="btn btn-sm status-radio" data-val="unrated" onclick="setStatusRadio(this)">— Unrated</button>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <!-- Name -->
+          <div class="col-12">
+            <div class="modal-label">Property Name</div>
+            <input class="form-control form-control-sm" id="editName" placeholder="Property name">
+          </div>
+          <!-- Price -->
+          <div class="col-sm-4">
+            <div class="modal-label">Rent Price (Juta / tahun)</div>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">Rp</span>
+              <input class="form-control" id="editPrice" type="number" placeholder="e.g. 55">
+              <span class="input-group-text">Juta</span>
+            </div>
+          </div>
+          <!-- Floors -->
+          <div class="col-sm-4">
+            <div class="modal-label">Floors (Lantai)</div>
+            <input class="form-control form-control-sm" id="editFloors" type="number" placeholder="e.g. 3">
+          </div>
+          <!-- Furnished -->
+          <div class="col-sm-4">
+            <div class="modal-label">Furnished</div>
+            <select class="form-select form-select-sm" id="editFurnished">
+              <option value="">— Unknown</option>
+              <option value="Furnished">Furnished</option>
+              <option value="Semi Furnished">Semi Furnished</option>
+              <option value="Unfurnished">Unfurnished</option>
+              <option value="Full Furnished">Full Furnished</option>
+            </select>
+          </div>
+          <!-- LB -->
+          <div class="col-sm-3">
+            <div class="modal-label">LB – Bangunan (m²)</div>
+            <input class="form-control form-control-sm" id="editLB" type="number" placeholder="m²">
+          </div>
+          <!-- LT -->
+          <div class="col-sm-3">
+            <div class="modal-label">LT – Tanah (m²)</div>
+            <input class="form-control form-control-sm" id="editLT" type="number" placeholder="m²">
+          </div>
+          <!-- Beds -->
+          <div class="col-sm-3">
+            <div class="modal-label">Kamar Tidur</div>
+            <input class="form-control form-control-sm" id="editBeds" type="number" placeholder="KT">
+          </div>
+          <!-- Baths -->
+          <div class="col-sm-3">
+            <div class="modal-label">Kamar Mandi</div>
+            <input class="form-control form-control-sm" id="editBaths" type="number" placeholder="KM">
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="mb-2">
+          <div class="modal-label">📝 My Notes</div>
+          <textarea class="form-control" id="editNotes" rows="4"
+            placeholder="E.g. Good location, close to main road. Need to check parking. Call agent: ..."></textarea>
+        </div>
+
+        <!-- View listing link -->
+        <div id="modalLink" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm fw-bold px-4" style="background:var(--airbnb);color:#fff" onclick="saveEdit()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════
+   DEFAULT DATA — 22 Ruko listings (cleaned from collector)
+═══════════════════════════════════════════════════════════ */
+const DEFAULTS = [
+  { id:1,  name:"Ruko Jl. Yoserizal – Baru Renovasi",           district:"Medan Area",       price:55, floors:5,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Siap Huni, Baru Renovasi",        url:"https://www.rumah123.com/properti/medan-medan-area/ruko-baru-renovasi-siap-huni-buka-usaha-jalan-yoserizal-shr4346948/"           },
+  { id:2,  name:"Ruko Asia – Ex Bank Danamon",                   district:"Medan Area",       price:65, floors:"", lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Jl. Asia",                         url:"https://www.rumah123.com/properti/medan-medan-area/ruko-asia-ex-bank-danamon-shr9917555/"                                        },
+  { id:3,  name:"Ruko Asia Mega – Semi Furnished",               district:"Medan Area",       price:75, floors:5,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Semi Furnished", hints:"Siap Huni, Semi Furnished",        url:"https://www.rumah123.com/properti/medan-medan-area/ruko-asia-mega-siap-huni-buka-usaha-semi-furnished-shr3759642/"             },
+  { id:4,  name:"Ruko Jl. Wahidin – Ujung/Simp Jl. Negara",     district:"Medan Area",       price:40, floors:5,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Cocok Buka Usaha",                 url:"https://www.rumah123.com/properti/medan-medan-area/disewakan-ruko-jlwahidin-ujungsimpjlnegara-cocok-buka-usahaa-hor39554546/"   },
+  { id:5,  name:"Rumah Duyung – Full Furnished",                 district:"Medan Area",       price:32, floors:2,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Full Furnished", hints:"Full Furnished",                   url:"https://www.rumah123.com/properti/medan-medan-area/rumah-duyung-full-furnished-hor40384981/"                                     },
+  { id:6,  name:"Apartment SOHO – Grand Jati Junction",          district:"Medan Timur",      price:75, floors:"", lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Apartment / SOHO",                 url:"https://www.rumah123.com/properti/medan-medan-timur/apartment-soho-grand-jati-junction-apr2642615/"                             },
+  { id:7,  name:"Ruko Jl. Bukit Barisan Dalam",                  district:"Medan Kota",       price:63, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Inti Kota",                        url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jl-bukit-barisan-dalam-medan-shr9743384/"                         },
+  { id:8,  name:"Ruko Jl. MT Haryono – Inti Kota",              district:"Medan Kota",       price:80, floors:5,  lb:"",    lt:"",   beds:"3", baths:"", furnished:"Furnished",     hints:"Inti Kota",                        url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jalan-mt-haryono-inti-kota-shr9807986/"                          },
+  { id:9,  name:"Ruko 4 Lantai – Jl. FL Tobing (Thamrin)",      district:"Medan Kota",       price:70, floors:4,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Semi Furnished", hints:"4 Lantai, Murah",                  url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-murah-4-tingkat-daerah-thamrin-jalan-fl-tobing-shr9395939/"      },
+  { id:10, name:"Ruko Jl. Wahidin – Simp Jl. Aceh",             district:"Medan Kota",       price:75, floors:"", lb:"252", lt:"99", beds:"", baths:"", furnished:"",              hints:"Pusat Kota",                       url:"https://www.rumah123.com/properti/medan-medan-kota/di-sewakan-ruko-pusat-kota-medan-jlwahidin-simpjlaceh-cocok-untuk-semua-usaha-shr4667418/" },
+  { id:11, name:"Ruko Gereja – Siap Huni",                       district:"Medan Barat",      price:65, floors:"", lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Siap Huni",                        url:"https://www.rumah123.com/properti/medan-medan-barat/ruko-gereja-siap-huni-hor40386593/"                                         },
+  { id:12, name:"Villa Jati Mas – Siap Huni",                    district:"Medan Perjuangan", price:65, floors:"", lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Siap Huni, Bagus",                 url:"https://www.rumah123.com/properti/medan-medan-perjuangan/villa-jati-mas-siap-huni-bagus-hor40385139/"                         },
+  { id:13, name:"Ruko 4 Lantai – Jl. Samarinda",                district:"Medan Kota",       price:60, floors:4,  lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"4 Lantai",                         url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-4-tgkt-samarinda-shr9392051/"                                          },
+  { id:14, name:"Ruko Jl. Bandung/Surabaya – Siap Huni",        district:"Medan Kota",       price:58, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Siap Huni",                        url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-sekitaran-bandung-surabaya-siap-huni-shr9814047/"                       },
+  { id:15, name:"Ruko Jl. Bandung/Surabaya – Lokasi Strategis", district:"Medan Kota",       price:60, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Lokasi Strategis",                 url:"https://www.rumah123.com/properti/medan-medan-kota/disewakan-ruko-usaha-sekitaran-jalan-bandung-dan-surabaya-lokaai-stratregis-shr9814093/" },
+  { id:16, name:"Ruko Jl. Kalimantan – Sumatera/Madong Lubis",  district:"Medan Kota",       price:58, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Inti Kota",                        url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-jalan-kalimantan-daerah-sumatera-dan-madong-lubis-inti-kota-shr9898330/" },
+  { id:17, name:"Ruko Jl. Bandung – Simp Jl. Cirebon",          district:"Medan Kota",       price:55, floors:"", lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Inti Kota",                        url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-di-inti-kota-medan-jalan-bandung-simp-jalan-cirebon-shr9397639/"        },
+  { id:18, name:"Ruko Jl. MT Haryono – Pusat Kota",             district:"Medan Kota",       price:57, floors:5,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Pusat Kota",                       url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jalan-mt-haryono-daerah-pusat-kota-shr9677356/"                  },
+  { id:19, name:"Ruko Jl. Asia – Ada Lift Barang",               district:"Medan Kota",       price:60, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Siap Huni, Lift Barang",           url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-bisnis-jl-asia-medan-siap-huni-ada-lift-barang-shr9745289/"             },
+  { id:20, name:"Ruko Jl. Karimun – Baru Renovasi",             district:"Medan Timur",      price:35, floors:5,  lb:"",    lt:"",   beds:"", baths:"", furnished:"",              hints:"Baru Renovasi",                    url:"https://www.rumah123.com/properti/medan-medan-timur/disewakan-ruko-jl-karimun-tepat-blkg-baru-renov-hor40785677/"               },
+  { id:21, name:"Ruko Jl. Sutomo Ujung – Siap Huni",            district:"Medan Timur",      price:60, floors:4,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"Siap Huni",                        url:"https://www.rumah123.com/properti/medan-medan-timur/ruko-sutomo-ujung-siap-huni-shr9718511/"                                    },
+  { id:22, name:"Ruko Sei Rengas II – 3,5 Lantai Baru",         district:"Medan Area",       price:55, floors:3,  lb:"",    lt:"",   beds:"", baths:"", furnished:"Unfurnished",   hints:"3,5 Lantai, Siap Huni, Baru",     url:"https://www.rumah123.com/properti/medan-medan-area/ruko-baru-3-12-tingkat-siap-huni-di-sei-rengas-ii-medan-area-shr9908823/" }
+];
+
+const DIST_COLORS = {
+  "Medan Kota":"#FF5A5F","Medan Area":"#00A699",
+  "Medan Timur":"#FC642D","Medan Barat":"#484848","Medan Perjuangan":"#FFB400"
+};
+const STATUS_INFO = {
+  star:    { label:"⭐ Interested", cls:"status-star"    },
+  maybe:   { label:"🤔 Maybe",     cls:"status-maybe"   },
+  pass:    { label:"❌ Pass",       cls:"status-pass"    },
+  unrated: { label:"— Unrated",   cls:"status-unrated" }
+};
+const MAX_PRICE = 80;
+
+/* ── user-editable overrides (merged with defaults) ── */
+let userEdits = {};
+let data = [];
+
+let currentView   = 'cards';
+let currentDist   = 'All';
+let currentStat   = 'All';
+
+/* ════ STORAGE ════ */
+function save() {
+  try { localStorage.setItem('rukoEdits', JSON.stringify(userEdits)); } catch(e) {}
+}
+function load() {
+  try { const s = localStorage.getItem('rukoEdits'); if(s) userEdits = JSON.parse(s); } catch(e) {}
+}
+function resetAll() {
+  if (!confirm('Reset ALL edits, notes and statuses back to defaults?')) return;
+  userEdits = {};
+  save();
+  buildData();
+  renderAll();
+}
+
+/* ════ BUILD MERGED DATA ════ */
+function buildData() {
+  data = DEFAULTS.map(d => {
+    const u = userEdits[d.id] || {};
+    return {
+      id:        d.id,
+      name:      u.name      !== undefined ? u.name      : d.name,
+      district:  d.district,
+      price:     u.price     !== undefined ? u.price     : d.price,
+      floors:    u.floors    !== undefined ? u.floors    : d.floors,
+      lb:        u.lb        !== undefined ? u.lb        : d.lb,
+      lt:        u.lt        !== undefined ? u.lt        : d.lt,
+      beds:      u.beds      !== undefined ? u.beds      : d.beds,
+      baths:     u.baths     !== undefined ? u.baths     : d.baths,
+      furnished: u.furnished !== undefined ? u.furnished : d.furnished,
+      notes:     u.notes     || '',
+      status:    u.status    || 'unrated',
+      hints:     d.hints,
+      url:       d.url
+    };
+  });
+}
+
+/* ════ FILTERS & SORT ════ */
+function getFiltered() {
+  let items = [...data];
+  if (currentDist !== 'All') items = items.filter(i => i.district === currentDist);
+  if (currentStat !== 'All') items = items.filter(i => i.status === currentStat);
+  const sort = document.getElementById('sortSel').value;
+  if (sort === 'price_asc')   items.sort((a,b) => (a.price||999)-(b.price||999));
+  if (sort === 'price_desc')  items.sort((a,b) => (b.price||0)-(a.price||0));
+  if (sort === 'floors_desc') items.sort((a,b) => (b.floors||0)-(a.floors||0));
+  if (sort === 'status') {
+    const order = { star:0, maybe:1, unrated:2, pass:3 };
+    items.sort((a,b) => (order[a.status]||2)-(order[b.status]||2));
+  }
+  return items;
+}
+
+function applyFilters() { renderAll(); }
+function setDist(btn) {
+  document.querySelectorAll('.dist-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentDist = btn.getAttribute('data-dist');
+  renderAll();
+}
+function setStat(btn) {
+  document.querySelectorAll('.stat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStat = btn.getAttribute('data-st');
+  renderAll();
+}
+function setView(v) {
+  currentView = v;
+  document.getElementById('cardView').style.display  = v === 'cards' ? 'block' : 'none';
+  document.getElementById('tableView').style.display = v === 'table' ? 'block' : 'none';
+  document.getElementById('btnCards').classList.toggle('active', v==='cards');
+  document.getElementById('btnTable').classList.toggle('active', v==='table');
+}
+
+/* ════ RENDER ALL ════ */
+function renderAll() {
+  const items = getFiltered();
+  renderCards(items);
+  renderTable(items);
+  renderSummary();
+}
+
+/* ════ SUMMARY PILLS ════ */
+function renderSummary() {
+  const prices = data.filter(d=>d.price).map(d=>d.price);
+  const minP = Math.min(...prices), maxP = Math.max(...prices);
+  const avgP = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+  const interested = data.filter(d=>d.status==='star').length;
+  document.getElementById('summaryPills').innerHTML = `
+    <span class="stat-pill">📋 ${data.length} listings</span>
+    <span class="stat-pill">💰 Rp ${minP}–${maxP} Juta/thn</span>
+    <span class="stat-pill">∅ Rp ${avgP} Juta avg</span>
+    ${interested ? `<span class="stat-pill">⭐ ${interested} interested</span>` : ''}
+  `;
+}
+
+/* ════ CARD RENDERING ════ */
+function renderCards(items) {
+  const row = document.getElementById('cardsRow');
+  row.innerHTML = '';
+  items.forEach(item => {
+    const dc = DIST_COLORS[item.district] || '#888';
+    const si = STATUS_INFO[item.status] || STATUS_INFO.unrated;
+    const pricePct = item.price ? Math.round((item.price/MAX_PRICE)*100) : 0;
+    const col = document.createElement('div');
+    col.className = 'col-sm-6 col-md-4 col-xl-3';
+    col.innerHTML = `
+      <div class="prop-card">
+        <div class="card-accent" style="background:${dc}"></div>
+        <button class="btn-edit" onclick="openEdit(${item.id})">✏️ Edit</button>
+        <div class="p-3 pt-2">
+          <!-- District + Status -->
+          <div class="d-flex align-items-center gap-1 mb-2 flex-wrap">
+            <span class="dist-badge" style="background:${dc}">${item.district}</span>
+            <span class="badge status-badge ${si.cls}" onclick="cycleStatus(${item.id})" title="Click to change status">${si.label}</span>
+          </div>
+
+          <!-- Name (clickable link) -->
+          <a href="${item.url}" target="_blank" class="prop-name d-block mb-2">${item.name}</a>
+
+          <!-- Price -->
+          <div class="d-flex align-items-baseline gap-1 mb-1">
+            ${item.price
+              ? `<span class="price-big">Rp ${item.price} Juta</span><span class="price-unit">/tahun</span>`
+              : `<span class="text-muted" style="font-size:.8rem">Price not set</span>`}
+          </div>
+          <div class="price-bar-wrap mb-3">
+            <div class="price-bar" style="width:${pricePct}%"></div>
+          </div>
+
+          <!-- Specs grid -->
+          <div class="spec-grid mb-2">
+            ${item.floors ? `<div class="spec-item">🏢 <span><strong>${item.floors}</strong> Lantai</span></div>` : '<div class="spec-item text-muted">🏢 Floors?</div>'}
+            ${item.furnished ? `<div class="spec-item">🪑 <span style="font-size:.7rem">${item.furnished}</span></div>` : '<div class="spec-item text-muted">🪑 —</div>'}
+            ${item.lb ? `<div class="spec-item">📐 <span><strong>${item.lb}</strong> m² LB</span></div>` : ''}
+            ${item.lt ? `<div class="spec-item">🌿 <span><strong>${item.lt}</strong> m² LT</span></div>` : ''}
+            ${item.beds  ? `<div class="spec-item">🛏 <span><strong>${item.beds}</strong> KT</span></div>` : ''}
+            ${item.baths ? `<div class="spec-item">🚿 <span><strong>${item.baths}</strong> KM</span></div>` : ''}
+          </div>
+
+          <!-- Hints -->
+          <div class="mb-2">${(item.hints||'').split(',').map(h=>`<span class="hint-tag">${h.trim()}</span>`).join('')}</div>
+
+          <!-- Notes -->
+          ${item.notes
+            ? `<div class="notes-preview" title="${item.notes}">📝 ${item.notes}</div>`
+            : `<div class="notes-preview text-muted" onclick="openEdit(${item.id})" style="cursor:pointer">📝 Add notes...</div>`}
+        </div>
+      </div>`;
+    row.appendChild(col);
+  });
+}
+
+/* ════ TABLE RENDERING ════ */
+function renderTable(items) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  items.forEach(item => {
+    const dc = DIST_COLORS[item.district] || '#888';
+    const si = STATUS_INFO[item.status] || STATUS_INFO.unrated;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-muted fw-bold">${item.id}</td>
+      <td><span class="badge status-badge ${si.cls}" onclick="cycleStatus(${item.id})" title="Click to change" style="cursor:pointer">${si.label}</span></td>
+      <td><a href="${item.url}" target="_blank" class="name-link">${item.name}</a></td>
+      <td><span class="dist-badge" style="background:${dc}">${item.district}</span></td>
+      <td class="price-cell">${item.price ? `Rp ${item.price}M` : '—'}</td>
+      <td>${item.floors || '—'}</td>
+      <td>${item.lb ? item.lb+' m²' : '—'}</td>
+      <td>${item.lt ? item.lt+' m²' : '—'}</td>
+      <td>${item.beds || '—'}</td>
+      <td>${item.baths || '—'}</td>
+      <td><span style="font-size:.75rem">${item.furnished || '—'}</span></td>
+      <td class="notes-cell">${item.notes || '<span class="text-muted fst-italic">—</span>'}</td>
+      <td><button class="btn btn-sm" style="font-size:.7rem;background:${dc};color:#fff;white-space:nowrap" onclick="openEdit(${item.id})">✏️ Edit</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ════ STATUS CYCLE (click badge to change) ════ */
+function cycleStatus(id) {
+  const order = ['unrated','star','maybe','pass'];
+  const item = data.find(d=>d.id===id);
+  if (!item) return;
+  const next = order[(order.indexOf(item.status)+1) % order.length];
+  if (!userEdits[id]) userEdits[id] = {};
+  userEdits[id].status = next;
+  save();
+  buildData();
+  renderAll();
+}
+
+/* ════ EDIT MODAL ════ */
+let editModal;
+window.addEventListener('DOMContentLoaded', () => {
+  editModal = new bootstrap.Modal(document.getElementById('editModal'));
+});
+
+function openEdit(id) {
+  const item = data.find(d=>d.id===id);
+  if (!item) return;
+
+  document.getElementById('editId').value      = id;
+  document.getElementById('modalTitle').textContent = `✏️ Edit #${id}: ${item.name.substring(0,45)}`;
+  document.getElementById('editName').value    = item.name;
+  document.getElementById('editPrice').value   = item.price || '';
+  document.getElementById('editFloors').value  = item.floors || '';
+  document.getElementById('editLB').value      = item.lb || '';
+  document.getElementById('editLT').value      = item.lt || '';
+  document.getElementById('editBeds').value    = item.beds || '';
+  document.getElementById('editBaths').value   = item.baths || '';
+  document.getElementById('editFurnished').value = item.furnished || '';
+  document.getElementById('editNotes').value   = item.notes || '';
+  document.getElementById('modalLink').innerHTML =
+    `<a href="${item.url}" target="_blank" class="btn btn-sm btn-outline-secondary">🔗 Open listing on Rumah123</a>`;
+
+  // Status radio buttons
+  document.querySelectorAll('.status-radio').forEach(btn => {
+    const active = btn.getAttribute('data-val') === item.status;
+    btn.className = 'btn btn-sm status-radio ' + (active ? 'btn-dark' : 'btn-outline-secondary');
+  });
+
+  editModal.show();
+}
+
+function setStatusRadio(btn) {
+  document.querySelectorAll('.status-radio').forEach(b => {
+    b.className = 'btn btn-sm status-radio btn-outline-secondary';
+  });
+  btn.className = 'btn btn-sm status-radio btn-dark';
+}
+
+function saveEdit() {
+  const id = parseInt(document.getElementById('editId').value);
+  if (!userEdits[id]) userEdits[id] = {};
+
+  // Get status from active radio
+  let status = 'unrated';
+  document.querySelectorAll('.status-radio').forEach(btn => {
+    if (btn.classList.contains('btn-dark')) status = btn.getAttribute('data-val');
+  });
+
+  userEdits[id].name      = document.getElementById('editName').value.trim();
+  userEdits[id].price     = parseFloat(document.getElementById('editPrice').value) || '';
+  userEdits[id].floors    = document.getElementById('editFloors').value;
+  userEdits[id].lb        = document.getElementById('editLB').value;
+  userEdits[id].lt        = document.getElementById('editLT').value;
+  userEdits[id].beds      = document.getElementById('editBeds').value;
+  userEdits[id].baths     = document.getElementById('editBaths').value;
+  userEdits[id].furnished = document.getElementById('editFurnished').value;
+  userEdits[id].notes     = document.getElementById('editNotes').value;
+  userEdits[id].status    = status;
+
+  save();
+  buildData();
+  renderAll();
+  editModal.hide();
+}
+
+/* ════ BOOT ════ */
+load();
+buildData();
+renderAll();
+setView('cards');
+</script>
+</body>
+</html>

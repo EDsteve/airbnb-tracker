@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>🏢 Ruko Medan – Collector & Comparison</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    :root {
+      --airbnb: #FF5A5F;
+      --teal:   #00A699;
+      --orange: #FC642D;
+      --dark:   #484848;
+      --gold:   #FFB400;
+    }
+    body { background:#f5f5f5; font-family:'Segoe UI',system-ui,sans-serif; }
+
+    /* ── TOP BAR ── */
+    .topbar { background:var(--airbnb); color:#fff; padding:.8rem 0;
+              box-shadow:0 2px 8px rgba(0,0,0,.2); margin-bottom:2rem; }
+    .topbar .brand { font-weight:800; font-size:1.2rem; }
+
+    /* ── BOOKMARKLET BOX ── */
+    .bm-box { background:#fff3cd; border:2px dashed #ffc107;
+              border-radius:12px; padding:1.2rem 1.5rem; }
+    .bm-link { display:inline-block; background:#0d6efd; color:#fff;
+               padding:.45rem 1rem; border-radius:8px; cursor:move;
+               font-weight:700; font-size:.9rem; text-decoration:none;
+               border:3px dashed #fff; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+    .bm-link:hover { background:#0b5ed7; color:#fff; }
+
+    /* ── LISTING ROW ── */
+    .listing-row { background:#fff; border-radius:10px;
+                   box-shadow:0 1px 6px rgba(0,0,0,.08);
+                   margin-bottom:.7rem; overflow:hidden;
+                   transition: box-shadow .2s; }
+    .listing-row:hover { box-shadow:0 3px 12px rgba(0,0,0,.14); }
+    .listing-row.done { border-left:4px solid #198754; }
+    .listing-row.pending { border-left:4px solid #dee2e6; }
+
+    .dist-badge { font-size:.7rem; font-weight:700; padding:.2rem .6rem;
+                  border-radius:20px; color:#fff; white-space:nowrap; }
+    .status-dot { width:10px; height:10px; border-radius:50%;
+                  display:inline-block; }
+    .dot-done    { background:#198754; }
+    .dot-pending { background:#dee2e6; }
+
+    .data-preview { font-size:.78rem; color:#555; }
+    .data-preview span { margin-right:.8rem; }
+
+    /* ── PASTE AREA ── */
+    .paste-area { font-size:.75rem; font-family:monospace;
+                  resize:vertical; min-height:60px; }
+
+    /* ── PROGRESS ── */
+    #progressBar { transition: width .4s; }
+
+    /* ── COMPARISON SECTION ── */
+    #compSection { display:none; }
+    .comp-card { background:#fff; border-radius:12px;
+                 box-shadow:0 2px 10px rgba(0,0,0,.09);
+                 overflow:hidden; height:100%; }
+    .comp-card-img { width:100%; height:150px; object-fit:cover; }
+    .comp-card-img-ph { width:100%; height:150px; background:#f0f0f0;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:2.5rem; color:#ccc; }
+    .comp-table th { font-size:.7rem; text-transform:uppercase;
+                     letter-spacing:.06em; color:#aaa; background:#fafafa; }
+    .comp-table td { font-size:.82rem; vertical-align:middle; }
+    .price-tag { font-weight:700; color:var(--airbnb); }
+    .hint-badge { font-size:.68rem; padding:.15rem .5rem;
+                  border-radius:20px; font-weight:600; }
+
+    /* sort controls */
+    .sort-btn.active { background:var(--airbnb); color:#fff; }
+    .filter-btn.active { background:var(--airbnb); color:#fff; }
+
+    .sec { font-size:.7rem; font-weight:700; text-transform:uppercase;
+           letter-spacing:.1em; color:#aaa; margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span class="brand">🏢 Ruko Medan – Collector & Comparison</span>
+    <span class="badge bg-white text-dark fw-semibold" id="progressPill">0 / 22 collected</span>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- ══════════════ STEP 1: BOOKMARKLET ══════════════ -->
+  <div class="bm-box mb-4" id="bmSetup">
+    <h5 class="fw-bold mb-2">📌 Step 1 — Add the extractor to your bookmarks bar <span class="badge bg-warning text-dark ms-2" style="font-size:.7rem">Do this once</span></h5>
+    <p class="mb-2" style="font-size:.88rem">
+      Drag the button below onto your <strong>Chrome bookmarks bar</strong>. You only need to do this once.
+    </p>
+    <a class="bm-link" id="bookmarkletLink" href="#" title="Drag me to your bookmarks bar!">
+      🔍 Grab Ruko Data
+    </a>
+    <p class="mt-2 mb-0 text-muted" style="font-size:.78rem">
+      💡 <strong>After dragging:</strong> open any listing below → click this bookmark → data auto-fills here!
+    </p>
+  </div>
+
+  <!-- ══════════════ STEP 2: PROGRESS ══════════════ -->
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <span class="sec mb-0">Step 2 — Open each listing &amp; click your bookmark</span>
+      <span style="font-size:.8rem; color:#888" id="progressText">0 of 22 done</span>
+    </div>
+    <div class="progress" style="height:8px;">
+      <div class="progress-bar bg-success" id="progressBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LISTING ROWS ══════════════ -->
+  <div id="listingRows"></div>
+
+  <!-- ══════════════ GENERATE BUTTON ══════════════ -->
+  <div class="text-center mt-4 mb-4">
+    <button class="btn btn-lg px-5 fw-bold" id="genBtn"
+            style="background:var(--airbnb);color:#fff;border-radius:30px;"
+            onclick="generateComparison()">
+      📊 Generate Comparison View
+    </button>
+    <p class="text-muted mt-2" style="font-size:.8rem">
+      You can generate with partial data too — collected entries will show, the rest will be greyed out.
+    </p>
+  </div>
+
+  <!-- ══════════════ COMPARISON SECTION ══════════════ -->
+  <div id="compSection">
+    <hr class="my-4">
+
+    <!-- FILTER + SORT -->
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+      <span class="sec mb-0 me-2">Filter:</span>
+      <button class="btn btn-sm filter-btn active" data-dist="All" onclick="filterCards(this)">All</button>
+      <button class="btn btn-sm filter-btn border" data-dist="Medan Kota" onclick="filterCards(this)">Medan Kota</button>
+      <button class="btn btn-sm filter-btn border" data-dist="Medan Area" onclick="filterCards(this)">Medan Area</button>
+      <button class="btn btn-sm filter-btn border" data-dist="Medan Timur" onclick="filterCards(this)">Medan Timur</button>
+      <button class="btn btn-sm filter-btn border" data-dist="Medan Barat" onclick="filterCards(this)">Medan Barat</button>
+      <button class="btn btn-sm filter-btn border" data-dist="Medan Perjuangan" onclick="filterCards(this)">Medan Perjuangan</button>
+      <span class="ms-3 sec mb-0 me-1">Sort:</span>
+      <button class="btn btn-sm sort-btn border" data-sort="price" onclick="sortCards(this)">💰 Price</button>
+      <button class="btn btn-sm sort-btn border" data-sort="lb" onclick="sortCards(this)">📐 Building m²</button>
+      <button class="btn btn-sm sort-btn border" data-sort="floors" onclick="sortCards(this)">🏢 Floors</button>
+      <button class="btn btn-sm sort-btn border" data-sort="num" onclick="sortCards(this)">🔢 #</button>
+    </div>
+
+    <!-- CARDS -->
+    <p class="sec">Property Cards</p>
+    <div class="row g-3 mb-4" id="compCards"></div>
+
+    <!-- TABLE -->
+    <p class="sec mt-4">Side-by-Side Comparison Table</p>
+    <div class="bg-white rounded-3 shadow-sm p-3">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm comp-table align-middle mb-0" id="compTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>District</th>
+              <th>Price</th>
+              <th>LB (m²)</th>
+              <th>LT (m²)</th>
+              <th>Floors</th>
+              <th>Beds</th>
+              <th>Baths</th>
+              <th>Furnished</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="compTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /compSection -->
+
+</div><!-- /container -->
+
+<script>
+/* ════════════════════════════════════════════════════════
+   DATA — 22 Ruko listings
+═══════════════════════════════════════════════════════════ */
+const LISTINGS = [
+  { id:1,  url:"https://www.rumah123.com/properti/medan-medan-area/ruko-baru-renovasi-siap-huni-buka-usaha-jalan-yoserizal-shr4346948/",           name:"Ruko Jl. Yoserizal – Baru Renovasi",            district:"Medan Area",       hints:"Siap Huni, Baru Renovasi" },
+  { id:2,  url:"https://www.rumah123.com/properti/medan-medan-area/ruko-asia-ex-bank-danamon-shr9917555/",                                         name:"Ruko Asia – Ex Bank Danamon",                   district:"Medan Area",       hints:"Jl. Asia" },
+  { id:3,  url:"https://www.rumah123.com/properti/medan-medan-area/ruko-asia-mega-siap-huni-buka-usaha-semi-furnished-shr3759642/",                 name:"Ruko Asia Mega – Semi Furnished",               district:"Medan Area",       hints:"Siap Huni, Semi Furnished" },
+  { id:4,  url:"https://www.rumah123.com/properti/medan-medan-area/disewakan-ruko-jlwahidin-ujungsimpjlnegara-cocok-buka-usahaa-hor39554546/",     name:"Ruko Jl. Wahidin – Ujung/Simp Jl. Negara",     district:"Medan Area",       hints:"Cocok Buka Usaha" },
+  { id:5,  url:"https://www.rumah123.com/properti/medan-medan-area/rumah-duyung-full-furnished-hor40384981/",                                      name:"Rumah Duyung – Full Furnished",                 district:"Medan Area",       hints:"Full Furnished" },
+  { id:6,  url:"https://www.rumah123.com/properti/medan-medan-timur/apartment-soho-grand-jati-junction-apr2642615/",                              name:"Apartment SOHO – Grand Jati Junction",          district:"Medan Timur",      hints:"Apartment / SOHO" },
+  { id:7,  url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jl-bukit-barisan-dalam-medan-shr9743384/",                         name:"Ruko Jl. Bukit Barisan Dalam",                  district:"Medan Kota",       hints:"Inti Kota" },
+  { id:8,  url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jalan-mt-haryono-inti-kota-shr9807986/",                           name:"Ruko Jl. MT Haryono – Inti Kota",               district:"Medan Kota",       hints:"Inti Kota" },
+  { id:9,  url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-murah-4-tingkat-daerah-thamrin-jalan-fl-tobing-shr9395939/",       name:"Ruko 4 Lantai – Jl. FL Tobing (Thamrin)",       district:"Medan Kota",       hints:"4 Lantai, Murah" },
+  { id:10, url:"https://www.rumah123.com/properti/medan-medan-kota/di-sewakan-ruko-pusat-kota-medan-jlwahidin-simpjlaceh-cocok-untuk-semua-usaha-shr4667418/", name:"Ruko Jl. Wahidin – Simp Jl. Aceh",       district:"Medan Kota",       hints:"Pusat Kota" },
+  { id:11, url:"https://www.rumah123.com/properti/medan-medan-barat/ruko-gereja-siap-huni-hor40386593/",                                          name:"Ruko Gereja – Siap Huni",                       district:"Medan Barat",      hints:"Siap Huni" },
+  { id:12, url:"https://www.rumah123.com/properti/medan-medan-perjuangan/villa-jati-mas-siap-huni-bagus-hor40385139/",                            name:"Villa Jati Mas – Siap Huni",                    district:"Medan Perjuangan", hints:"Siap Huni, Bagus" },
+  { id:13, url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-4-tgkt-samarinda-shr9392051/",                                            name:"Ruko 4 Lantai – Jl. Samarinda",                 district:"Medan Kota",       hints:"4 Lantai" },
+  { id:14, url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-sekitaran-bandung-surabaya-siap-huni-shr9814047/",                        name:"Ruko Jl. Bandung/Surabaya – Siap Huni",         district:"Medan Kota",       hints:"Siap Huni" },
+  { id:15, url:"https://www.rumah123.com/properti/medan-medan-kota/disewakan-ruko-usaha-sekitaran-jalan-bandung-dan-surabaya-lokaai-stratregis-shr9814093/", name:"Ruko Jl. Bandung/Surabaya – Lokasi Strategis",district:"Medan Kota", hints:"Lokasi Strategis" },
+  { id:16, url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-jalan-kalimantan-daerah-sumatera-dan-madong-lubis-inti-kota-shr9898330/", name:"Ruko Jl. Kalimantan – Sumatera/Madong Lubis",   district:"Medan Kota",       hints:"Inti Kota" },
+  { id:17, url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-di-inti-kota-medan-jalan-bandung-simp-jalan-cirebon-shr9397639/",         name:"Ruko Jl. Bandung – Simp Jl. Cirebon",           district:"Medan Kota",       hints:"Inti Kota" },
+  { id:18, url:"https://www.rumah123.com/properti/medan-medan-kota/disewa-ruko-jalan-mt-haryono-daerah-pusat-kota-shr9677356/",                   name:"Ruko Jl. MT Haryono – Pusat Kota",              district:"Medan Kota",       hints:"Pusat Kota" },
+  { id:19, url:"https://www.rumah123.com/properti/medan-medan-kota/ruko-bisnis-jl-asia-medan-siap-huni-ada-lift-barang-shr9745289/",              name:"Ruko Jl. Asia – Ada Lift Barang",               district:"Medan Kota",       hints:"Siap Huni, Lift Barang" },
+  { id:20, url:"https://www.rumah123.com/properti/medan-medan-timur/disewakan-ruko-jl-karimun-tepat-blkg-baru-renov-hor40785677/",                name:"Ruko Jl. Karimun – Baru Renovasi",              district:"Medan Timur",      hints:"Baru Renovasi" },
+  { id:21, url:"https://www.rumah123.com/properti/medan-medan-timur/ruko-sutomo-ujung-siap-huni-shr9718511/",                                     name:"Ruko Jl. Sutomo Ujung – Siap Huni",             district:"Medan Timur",      hints:"Siap Huni" },
+  { id:22, url:"https://www.rumah123.com/properti/medan-medan-area/ruko-baru-3-12-tingkat-siap-huni-di-sei-rengas-ii-medan-area-shr9908823/",     name:"Ruko Sei Rengas II – 3,5 Lantai Baru",          district:"Medan Area",       hints:"3,5 Lantai, Siap Huni, Baru" }
+];
+
+const DIST_COLORS = {
+  "Medan Kota":        "#FF5A5F",
+  "Medan Area":        "#00A699",
+  "Medan Timur":       "#FC642D",
+  "Medan Barat":       "#484848",
+  "Medan Perjuangan":  "#FFB400"
+};
+
+/* collected data store */
+let collected = {};
+
+/* ════════════════════════════════════════════════════════
+   BOOKMARKLET
+═══════════════════════════════════════════════════════════ */
+const BOOKMARKLET_CODE = `javascript:(function(){
+  var d={};
+  try{
+    var nd=document.getElementById('__NEXT_DATA__');
+    if(nd){
+      var j=JSON.parse(nd.textContent);
+      var props=j&&j.props&&j.props.pageProps;
+      if(props){
+        var p=props.property||props.listing||props.data||props;
+        if(p){
+          if(p.title||p.name)d.title=p.title||p.name;
+          if(p.price_min||p.priceMin||p.rent_price)d.price='Rp '+(p.price_min||p.priceMin||p.rent_price);
+          if(p.building_size||p.buildingSize)d.lb=String(p.building_size||p.buildingSize);
+          if(p.land_size||p.landSize)d.lt=String(p.land_size||p.landSize);
+          if(p.floor_count||p.floorCount||p.storey)d.floors=String(p.floor_count||p.floorCount||p.storey);
+          if(p.bedroom_count||p.bedroomCount||p.bedroom)d.beds=String(p.bedroom_count||p.bedroomCount||p.bedroom);
+          if(p.bathroom_count||p.bathroomCount||p.bathroom)d.baths=String(p.bathroom_count||p.bathroomCount||p.bathroom);
+          if(p.furnishing||p.furnished)d.furnished=p.furnishing||p.furnished;
+          if(p.address||p.location_name)d.location=p.address||p.location_name;
+          if(p.photos&&p.photos[0])d.img=p.photos[0].url||p.photos[0];
+          if(p.description)d.desc=(p.description||'').substring(0,300);
+        }
+      }
+    }
+  }catch(e){}
+  
+  if(!d.title)d.title=(document.querySelector('h1')||{}).innerText||document.title;
+  
+  var body=document.body.innerText;
+  
+  if(!d.price){
+    var pm=document.querySelector('[class*="price"],[data-testid*="price"],[class*="Price"],[class*="harga"]');
+    if(pm)d.price=pm.innerText.trim().split('\\n')[0];
+  }
+  if(!d.price){
+    var pm2=body.match(/Rp\\s?[\\d.,]+(?:\\s?(?:Juta|Miliar|juta|miliar|Rb))?(?:\\s*\\/\\s*(?:tahun|bulan|thn|bln))?/);
+    if(pm2)d.price=pm2[0];
+  }
+  
+  document.querySelectorAll('[class*="spec"],[class*="attribute"],[class*="Spec"],[class*="detail"],[data-testid]').forEach(function(el){
+    var t=el.innerText||'';
+    var v=function(rx){var m=t.match(rx);return m?m[1]:null;};
+    if(!d.lb&&/LB|Luas Bangunan/i.test(t)){d.lb=v(/(\\d+)/);}
+    if(!d.lt&&/LT|Luas Tanah/i.test(t)){d.lt=v(/(\\d+)/);}
+    if(!d.floors&&/tingkat|lantai|floor|storey/i.test(t)){d.floors=v(/(\\d+)/);}
+    if(!d.beds&&/kamar tidur|bedroom|\\bKT\\b/i.test(t)){d.beds=v(/(\\d+)/);}
+    if(!d.baths&&/kamar mandi|bathroom|\\bKM\\b/i.test(t)){d.baths=v(/(\\d+)/);}
+    if(!d.furnished&&/furnished/i.test(t)){var fm=t.match(/(?:full|semi|un)?\\s*furnished/i);if(fm)d.furnished=fm[0];}
+  });
+  
+  if(!d.lb){var m=body.match(/LB[:\\s]+(\\d+)/i);if(m)d.lb=m[1];}
+  if(!d.lt){var m=body.match(/LT[:\\s]+(\\d+)/i);if(m)d.lt=m[1];}
+  if(!d.floors){var m=body.match(/(\\d+)\\s*(?:tingkat|lantai)/i);if(m)d.floors=m[1];}
+  if(!d.beds){var m=body.match(/(\\d+)\\s*(?:kamar tidur|KT\\b)/i);if(m)d.beds=m[1];}
+  if(!d.baths){var m=body.match(/(\\d+)\\s*(?:kamar mandi|KM\\b)/i);if(m)d.baths=m[1];}
+  if(!d.furnished){var m=body.match(/(?:full|semi|un)?\\s*furnished/i);if(m)d.furnished=m[0];}
+  
+  if(!d.location){
+    var lel=document.querySelector('[class*="address"],[class*="location"],[class*="area"],[class*="Location"]');
+    if(lel)d.location=lel.innerText.trim().split('\\n')[0];
+  }
+  if(!d.img){
+    var iel=document.querySelector('img[src*="cdnproperty"],img[src*="property"],img[src*="photo"],img[src*="image"]');
+    if(iel)d.img=iel.src;
+  }
+  if(!d.img){d.img=(document.querySelector('meta[property="og:image"]')||{}).content||'';}
+  if(!d.desc){
+    var del=document.querySelector('[class*="description"],[class*="desc"],[class*="Description"]');
+    if(del)d.desc=(del.innerText||'').trim().substring(0,300);
+  }
+  d.url=window.location.href;
+  d.title=(d.title||document.title).trim().replace(/\\s+/g,' ');
+  
+  if(window.opener){
+    window.opener.postMessage({type:'RUKO_DATA',data:d},'*');
+    document.body.style.outline='5px solid #00A699';
+    var div=document.createElement('div');
+    div.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#00A699;color:#fff;padding:16px 28px;border-radius:12px;font-size:18px;font-weight:bold;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+    div.innerText='✅ Data sent back! You can close this tab.';
+    document.body.appendChild(div);
+    setTimeout(function(){window.close();},2500);
+  }else{
+    navigator.clipboard.writeText(JSON.stringify(d,null,2)).then(function(){
+      var div=document.createElement('div');
+      div.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FF5A5F;color:#fff;padding:16px 28px;border-radius:12px;font-size:18px;font-weight:bold;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+      div.innerHTML='✅ Data copied to clipboard!<br><small>Paste it in the collector page for this listing.</small>';
+      document.body.appendChild(div);
+      setTimeout(function(){div.remove();},4000);
+    });
+  }
+})();`;
+
+/* ════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+document.getElementById('bookmarkletLink').href = BOOKMARKLET_CODE;
+
+function renderRows() {
+  const container = document.getElementById('listingRows');
+  container.innerHTML = '';
+  LISTINGS.forEach(l => {
+    const c = collected[l.id];
+    const distColor = DIST_COLORS[l.district] || '#888';
+    const isDone = !!c;
+
+    const row = document.createElement('div');
+    row.className = 'listing-row ' + (isDone ? 'done' : 'pending') + ' p-3';
+    row.id = 'row-' + l.id;
+
+    row.innerHTML = `
+      <div class="d-flex align-items-start gap-3 flex-wrap">
+        <div class="fw-bold text-muted" style="min-width:24px;font-size:.9rem">${l.id}</div>
+
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <span class="dist-badge" style="background:${distColor}">${l.district}</span>
+            <strong style="font-size:.9rem">${l.name}</strong>
+            ${l.hints ? `<span class="hint-badge bg-light text-muted border">${l.hints}</span>` : ''}
+          </div>
+          ${isDone ? renderPreview(c) : `<span class="text-muted" style="font-size:.8rem">⏳ Not yet collected</span>`}
+
+          <!-- paste fallback -->
+          <div class="mt-2" id="pasteArea-${l.id}" style="display:${isDone?'none':'block'}">
+            <div class="d-flex gap-2 align-items-start">
+              <textarea class="form-control paste-area flex-grow-1" id="ta-${l.id}"
+                placeholder='Paste JSON here if bookmarklet said "copied to clipboard"...'></textarea>
+              <button class="btn btn-sm btn-outline-secondary" onclick="pasteSubmit(${l.id})" style="white-space:nowrap">✅ Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+          <span class="status-dot ${isDone ? 'dot-done' : 'dot-pending'}"></span>
+          ${isDone
+            ? `<button class="btn btn-sm btn-outline-danger" onclick="clearEntry(${l.id})">✕ Clear</button>`
+            : `<button class="btn btn-sm fw-semibold text-white" style="background:${distColor};white-space:nowrap"
+                onclick="openListing(${l.id})">🔗 Open</button>`
+          }
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+  updateProgress();
+}
+
+function renderPreview(d) {
+  const parts = [];
+  if (d.price) parts.push(`<span>💰 <strong>${d.price}</strong></span>`);
+  if (d.lb)    parts.push(`<span>📐 LB: ${d.lb} m²</span>`);
+  if (d.lt)    parts.push(`<span>🌿 LT: ${d.lt} m²</span>`);
+  if (d.floors) parts.push(`<span>🏢 ${d.floors} Lantai</span>`);
+  if (d.beds)  parts.push(`<span>🛏 ${d.beds} KT</span>`);
+  if (d.baths) parts.push(`<span>🚿 ${d.baths} KM</span>`);
+  if (d.furnished) parts.push(`<span>🪑 ${d.furnished}</span>`);
+  if (d.location)  parts.push(`<span>📍 ${d.location}</span>`);
+  return `<div class="data-preview mt-1">${parts.join('') || '<em class="text-muted">No details extracted</em>'}</div>`;
+}
+
+function openListing(id) {
+  const l = LISTINGS.find(x => x.id === id);
+  if (!l) return;
+  window.open(l.url, 'ruko_' + id);
+}
+
+function pasteSubmit(id) {
+  const ta = document.getElementById('ta-' + id);
+  try {
+    const d = JSON.parse(ta.value.trim());
+    collected[id] = d;
+    save();
+    renderRows();
+  } catch(e) {
+    alert('⚠️ Could not parse the pasted JSON. Make sure you copied the full output from the bookmarklet.');
+  }
+}
+
+function clearEntry(id) {
+  delete collected[id];
+  save();
+  renderRows();
+}
+
+function updateProgress() {
+  const done = Object.keys(collected).length;
+  const pct = Math.round(done / 22 * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = done + ' of 22 done';
+  document.getElementById('progressPill').textContent = done + ' / 22 collected';
+}
+
+/* ════════════════════════════════════════════════════════
+   postMessage listener — auto-fills when bookmarklet fires
+═══════════════════════════════════════════════════════════ */
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'RUKO_DATA') return;
+  const d = e.data.data;
+  if (!d || !d.url) return;
+
+  // Match by URL
+  const l = LISTINGS.find(x => d.url.includes(x.url.split('?')[0].replace(/\/$/, '')));
+  if (!l) {
+    alert('⚠️ Received data but could not match it to a listing. Please use the paste box.');
+    return;
+  }
+  collected[l.id] = d;
+  save();
+  renderRows();
+
+  // Flash feedback
+  const row = document.getElementById('row-' + l.id);
+  if (row) {
+    row.style.background = '#d1e7dd';
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => row.style.background = '', 2000);
+  }
+});
+
+/* ════════════════════════════════════════════════════════
+   PERSIST to localStorage
+═══════════════════════════════════════════════════════════ */
+function save() {
+  try { localStorage.setItem('rukoData', JSON.stringify(collected)); } catch(e) {}
+}
+function load() {
+  try {
+    const s = localStorage.getItem('rukoData');
+    if (s) collected = JSON.parse(s);
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════════════════════
+   COMPARISON VIEW
+═══════════════════════════════════════════════════════════ */
+let compData = [];
+let currentFilter = 'All';
+let currentSort   = 'num';
+
+function generateComparison() {
+  compData = LISTINGS.map(l => {
+    const c = collected[l.id] || {};
+    return {
+      id:        l.id,
+      name:      (c.title && c.title !== 'www.rumah123.com') ? c.title : l.name,
+      district:  l.district,
+      hints:     l.hints,
+      url:       l.url,
+      price:     c.price     || '',
+      priceNum:  parsePrice(c.price),
+      lb:        c.lb        || '',
+      lbNum:     parseInt(c.lb)   || 0,
+      lt:        c.lt        || '',
+      floors:    c.floors    || '',
+      floorsNum: parseInt(c.floors) || 0,
+      beds:      c.beds      || '',
+      baths:     c.baths     || '',
+      furnished: c.furnished || '',
+      img:       c.img       || '',
+      location:  c.location  || '',
+      desc:      c.desc      || '',
+      done:      !!collected[l.id]
+    };
+  });
+
+  document.getElementById('compSection').style.display = 'block';
+  document.getElementById('compSection').scrollIntoView({ behavior: 'smooth' });
+  renderComparison();
+}
+
+function parsePrice(p) {
+  if (!p) return Infinity;
+  // strip non-digits except dots/commas
+  let n = p.replace(/[^0-9.,]/g, '').replace(',', '.');
+  let val = parseFloat(n) || 0;
+  if (/miliar/i.test(p)) val *= 1e9;
+  else if (/juta/i.test(p)) val *= 1e6;
+  else if (/rb|ribu/i.test(p)) val *= 1e3;
+  return val || Infinity;
+}
+
+function renderComparison() {
+  let items = [...compData];
+
+  // filter
+  if (currentFilter !== 'All') items = items.filter(i => i.district === currentFilter);
+
+  // sort
+  items.sort((a, b) => {
+    if (currentSort === 'price')  return a.priceNum - b.priceNum;
+    if (currentSort === 'lb')     return b.lbNum - a.lbNum;
+    if (currentSort === 'floors') return b.floorsNum - a.floorsNum;
+    return a.id - b.id;
+  });
+
+  renderCards(items);
+  renderTable(items);
+}
+
+function renderCards(items) {
+  const row = document.getElementById('compCards');
+  row.innerHTML = '';
+  items.forEach(item => {
+    const distColor = DIST_COLORS[item.district] || '#888';
+    const col = document.createElement('div');
+    col.className = 'col-sm-6 col-md-4 col-lg-3';
+    col.setAttribute('data-dist', item.district);
+
+    const opacity = item.done ? 1 : 0.5;
+
+    col.innerHTML = `
+      <div class="comp-card" style="opacity:${opacity}">
+        ${item.img
+          ? `<img src="${item.img}" class="comp-card-img" alt="${item.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="comp-card-img-ph" style="${item.img ? 'display:none' : ''}">🏢</div>
+        <div style="height:4px;background:${distColor}"></div>
+        <div class="p-3">
+          <span class="dist-badge mb-2 d-inline-block" style="background:${distColor}">${item.district}</span>
+          <div class="fw-bold mb-1" style="font-size:.85rem;line-height:1.3">${item.name}</div>
+          ${item.price ? `<div class="price-tag mb-2" style="font-size:1rem">${item.price}</div>` : '<div class="text-muted mb-2" style="font-size:.8rem">Price not collected</div>'}
+          <div style="font-size:.78rem;color:#666;line-height:1.8">
+            ${item.lb     ? `📐 LB: <strong>${item.lb} m²</strong><br>` : ''}
+            ${item.lt     ? `🌿 LT: <strong>${item.lt} m²</strong><br>` : ''}
+            ${item.floors ? `🏢 <strong>${item.floors} Lantai</strong><br>` : ''}
+            ${item.beds   ? `🛏 <strong>${item.beds}</strong> KT &nbsp;` : ''}
+            ${item.baths  ? `🚿 <strong>${item.baths}</strong> KM<br>` : ''}
+            ${item.furnished ? `🪑 ${item.furnished}<br>` : ''}
+            ${item.hints  ? `<span class="text-muted">${item.hints}</span>` : ''}
+          </div>
+          <a href="${item.url}" target="_blank" class="btn btn-sm mt-2 w-100"
+             style="background:${distColor};color:#fff;font-size:.75rem">
+            🔗 Open Listing
+          </a>
+          ${!item.done ? '<div class="mt-1 text-center text-muted" style="font-size:.7rem">⚠️ Data not yet collected</div>' : ''}
+        </div>
+      </div>`;
+    row.appendChild(col);
+  });
+}
+
+function renderTable(items) {
+  const tbody = document.getElementById('compTableBody');
+  tbody.innerHTML = '';
+  items.forEach(item => {
+    const distColor = DIST_COLORS[item.district] || '#888';
+    const tr = document.createElement('tr');
+    if (!item.done) tr.style.opacity = '0.45';
+    tr.innerHTML = `
+      <td class="text-muted">${item.id}</td>
+      <td><div style="font-size:.82rem;max-width:200px">${item.name}</div></td>
+      <td><span class="dist-badge" style="background:${distColor}">${item.district}</span></td>
+      <td class="price-tag">${item.price || '—'}</td>
+      <td>${item.lb ? item.lb + ' m²' : '—'}</td>
+      <td>${item.lt ? item.lt + ' m²' : '—'}</td>
+      <td>${item.floors || '—'}</td>
+      <td>${item.beds || '—'}</td>
+      <td>${item.baths || '—'}</td>
+      <td>${item.furnished || '—'}</td>
+      <td><a href="${item.url}" target="_blank" class="btn btn-sm" style="background:${distColor};color:#fff;font-size:.7rem">Open</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterCards(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.getAttribute('data-dist');
+  renderComparison();
+}
+
+function sortCards(btn) {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSort = btn.getAttribute('data-sort');
+  renderComparison();
+}
+
+/* ════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════ */
+load();
+renderRows();
+
+// Regenerate comparison if already had data
+if (Object.keys(collected).length > 0) {
+  generateComparison();
+}
+</script>
+</body>
+</html>
