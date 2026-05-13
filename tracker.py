@@ -104,10 +104,11 @@ def load_listings(path: Path):
 
 
 def _parse_testid_date(tid: str) -> str | None:
-    # Airbnb calendar testids use DD/MM/YYYY (e.g. calendar-day-27/03/2026)
+    # Airbnb calendar testids use MM/DD/YYYY under en-US locale
+    # (e.g. calendar-day-03/27/2026 = March 27, 2026)
     m = re.search(r"(\d{2}/\d{2}/\d{4})", tid)
     if m:
-        dd, mm, yyyy = m.group(1).split("/")   # day first, then month
+        mm, dd, yyyy = m.group(1).split("/")
         return f"{yyyy}-{mm}-{dd}"
     m2 = re.search(r"(\d{4}-\d{2}-\d{2})", tid)
     if m2:
@@ -165,7 +166,7 @@ def _click_next_month(page) -> bool:
     return False
 
 
-def scrape_availability(page, url: str, months: int) -> dict:
+def scrape_availability(page, url: str, months: int, debug: bool = False) -> dict:
     availability: dict[str, str] = {}
     page.add_init_script(STEALTH_JS)
     page.goto(url, wait_until="domcontentloaded", timeout=40_000)
@@ -180,37 +181,67 @@ def scrape_availability(page, url: str, months: int) -> dict:
     # Reopen the full popup calendar (Escape may have closed it)
     _open_calendar(page)
 
-    def harvest_dom() -> int:
-        count = 0
+    harvest_log: list[tuple[str, int, int, str | None, str | None]] = []
+
+    def harvest_dom(label: str) -> int:
+        before = len(availability)
+        cells_seen = 0
+        dates_this_pass: list[str] = []
         for cell in page.query_selector_all("[data-testid^='calendar-day-']"):
+            cells_seen += 1
             tid = cell.get_attribute("data-testid") or ""
             ds  = _parse_testid_date(tid)
             if ds:
                 blocked  = cell.get_attribute("data-is-day-blocked") == "true"
                 disabled = cell.get_attribute("aria-disabled") == "true"
                 availability[ds] = "unavailable" if (blocked or disabled) else "available"
-                count += 1
-        return count
+                dates_this_pass.append(ds)
+        added = len(availability) - before
+        lo = min(dates_this_pass) if dates_this_pass else None
+        hi = max(dates_this_pass) if dates_this_pass else None
+        harvest_log.append((label, cells_seen, added, lo, hi))
+        if debug:
+            print(f"\n    [debug] {label}: {cells_seen} cells in DOM, "
+                  f"{len(dates_this_pass)} parsed, +{added} new "
+                  f"(range {lo} … {hi})", flush=True)
+        return added
 
-    harvest_dom()
+    harvest_dom("initial")
 
     today = date.today()
+    scroll_to_today = 0
     for _ in range(12):
         if today.isoformat() in availability:
             break
         if not _click_next_month(page):
             break
-        harvest_dom()
+        scroll_to_today += 1
+        harvest_dom(f"scroll-to-today #{scroll_to_today}")
 
+    extra_clicks = 0
     for _ in range(months - 1):
         if not _click_next_month(page):
             break
-        harvest_dom()
+        extra_clicks += 1
+        harvest_dom(f"extra-month #{extra_clicks}")
 
     # Only keep dates within the requested window [today, today + months]
     cutoff = _add_months(today, months).isoformat()
-    return {k: v for k, v in availability.items()
-            if today.isoformat() <= k <= cutoff}
+    filtered = {k: v for k, v in availability.items()
+                if today.isoformat() <= k <= cutoff}
+
+    if debug:
+        total = len(availability)
+        kept  = len(filtered)
+        dropped = total - kept
+        all_lo = min(availability) if availability else None
+        all_hi = max(availability) if availability else None
+        print(f"    [debug] harvested {total} unique dates total "
+              f"(range {all_lo} … {all_hi})", flush=True)
+        print(f"    [debug] window [{today.isoformat()} … {cutoff}] "
+              f"kept {kept}, dropped {dropped} outside window", flush=True)
+
+    return filtered
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -221,6 +252,8 @@ def main():
                     help=f"Months ahead to snapshot (default {MONTHS_TO_CHECK})")
     ap.add_argument("--db", default=str(DB_PATH),
                     help=f"SQLite database path (default: {DB_PATH})")
+    ap.add_argument("--debug", action="store_true",
+                    help="Print per-harvest details (cell counts, date ranges)")
     args = ap.parse_args()
 
     entries = load_listings(LISTINGS_FILE)
@@ -266,7 +299,7 @@ def main():
             print(f"  Scraping …", end=" ", flush=True)
             page = ctx.new_page()
             try:
-                availability = scrape_availability(page, url, args.months)
+                availability = scrape_availability(page, url, args.months, debug=args.debug)
                 if not availability:
                     print("No data (blocked or error)")
                 else:
